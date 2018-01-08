@@ -147,7 +147,7 @@ classdef Data
         % Get header and column labels from textdata. 
         function obj = getHeaderAndLabels(obj, textData)
             if size(textData(end,:),2) == 1
-                potentialLabels = obj.detectSpaces(textData(end,:));
+                potentialLabels = strsplit(strtrim(char(textData(end,:))));
                 if size(potentialLabels, 2) == 1
                     obj.isLabelled = false;
                     obj.hasHeader = true;
@@ -205,41 +205,6 @@ classdef Data
             
         end
         
-        % Check if the data can be subsampled to a requested frequency. 
-        function subsamplingChecks(obj, desiredFrequency)
-            if obj.isLabelled == false
-                error(['Input data is not labelled. Can''t tell which '...
-                       'column(s), if any, refer to time.'])
-            elseif obj.isTimeSeries == false
-                error(['Attempting to subsample data which does not belong '...
-                      'to a time series.'])
-            end
-            if obj.isConsistentFrequency == false
-                error(['Data you are attempting to subsample is not of '...
-                       'consistent frequency. Use findConsistentSlice.'])
-            elseif desiredFrequency > obj.Frequency
-                error(['Attempting to subsample to a higher frequency than '...
-                       'the original data.'])
-%             elseif mod(obj.Frequency,desiredFrequency) ~= 0
-%                 [upFreq, lowFreq] = obj.recommendSubsamplingFrequency(...
-%                                     obj.Frequency, desiredFrequency);
-%                 error(['Desired frequency is not achievable given the '...
-%                        'original data set. If the desired frequency is '...
-%                        'that of a second data set which you want to match'...
-%                        ', the alternative is to subsample both datasets '...
-%                        'to %d Hz. If not, and you are just seeking to '...
-%                        'subsample, the two nearest alternatives are %d '...
-%                        'and %d Hz.'], gcd(obj.Frequency, desiredFrequency)...
-%                        ,lowFreq, upFreq)
-%             % The above function was intended to recommend a good
-%             % subsampling frequency. Currently not used because things are
-%             % not integrated well in terms of using integer frequencies.
-%             % Not sure if it should be rounded before calling this or if
-%             % throughout I should assume integer frequencies for data, will
-%             % have to have a think about this and come back to it. 
-            end
-        end
-        
         % Get time column.
         function timeColumn = getTimeColumn(obj)
             if ~obj.isTimeSeries
@@ -260,91 +225,6 @@ classdef Data
         function endTime = getEndTime(obj)
             timeColumn = obj.getTimeColumn();
             endTime = timeColumn(end);
-        end
-        
-        % Subsample data. 
-        function obj = subsample(obj, desiredFrequency)
-            obj.subsamplingChecks(desiredFrequency);
-            if ~isa(desiredFrequency, 'double')
-                desiredFrequency = eval(desiredFrequency);
-            end
-            % The above is necessary because we used sym to obtain
-            % desiredFrequency, which means results of operations using
-            % desiredFrequency end up as fractions and mess things up. 
-            initialFrames = obj.Frames;
-            initialFrequency = obj.Frequency;
-            for i=obj.Frames:-1:1
-                % The testing value of 0.5*desiredFreq/obj.Freq should work,
-                % but if you're having trouble with this later check to
-                % make sure that this isn't too high/too low (causing
-                % frames to be passed/chopped off unnecessarily).
-                if abs(round(obj.Timesteps(i)*desiredFrequency,4) ...
-                            - round(obj.Timesteps(i)*desiredFrequency)) ...
-                            >= 0.6*(desiredFrequency/obj.Frequency)
-                    obj.Timesteps(i) = [];
-                    obj.Values(i,:) = [];
-                end
-            end
-            % Removing duplicates. 
-            for i=size(obj.Timesteps):-1:2
-                if ((round(obj.Timesteps(i-1)*desiredFrequency) ...
-                            - round(obj.Timesteps(i)*desiredFrequency)) == 0)
-                    obj.Timesteps(i-1) = [];
-                    obj.Values(i-1,:) = [];
-                end
-            end
-            obj.Frames = size(obj.Timesteps,1);
-            if (abs(initialFrequency/desiredFrequency ...
-                        - initialFrames/obj.Frames) ...
-                        > (initialFrequency/desiredFrequency - 1))
-                error('Subsampling data was not accurate enough.')
-            end
-            obj = obj.updateHeader();
-            obj = obj.checkFrequency();
-        end
-        
-        % Subsample two data objects to a common frequency. 
-        function [obj, anotherobj] = ...
-                    subsampleDataToCommonFrequency(obj, anotherobj)
-            highFrequency = max(obj.Frequency, anotherobj.Frequency);
-            lowFrequency = min(obj.Frequency, anotherobj.Frequency);
-            if (mod(highFrequency,lowFrequency) == 0)
-                subsamplingFrequency = lowFrequency;
-            else
-                subsamplingFrequency = gcd(highFrequency,lowFrequency);
-            end
-            obj = obj.subsample(subsamplingFrequency);
-            anotherobj = anotherobj.subsample(subsamplingFrequency);
-        end
-        
-        % Find the common frequency given a set of Data objects. 
-        function commonFrequency = findCommonFrequency(varargin)
-            % Rounds the frequencies to the nearest integer to find the
-            % nearest integer common frequency. 
-            frequencyList = [];
-            for i=1:size(varargin,2)
-                if ~isa(varargin{i},'Data')
-                    error('findCommonFrequency accepts only Data objects');
-                elseif ~varargin{i}.isTimeSeries
-                    error(['At least one input to findCommonFrequency is '...
-                           'not time series data.']);
-                elseif ~varargin{i}.isConsistentFrequency
-                    error(['At least one input to findCommonFrequency is '...
-                           'not consistent.']);
-                end
-                % My solution to the above feels really messy, not just in
-                % this function but in others. Feels like this could be
-                % solved better by having a more intricate class structure.
-                % Have a think about this. Do you lose functionality by
-                % moving it all to classes?
-                frequencyList = [frequencyList, round(varargin{i}.Frequency)];
-            end
-            commonFrequency = gcd(sym(frequencyList));
-        end
-        
-        % Find the longest slice of the data which of consistent frequency.
-        function findLongestConsistentSlice(obj)
-            % Not yet implemented.
         end
         
         % Find the common timesteps for two datasets and store them, as
@@ -629,55 +509,6 @@ classdef Data
             end
             obj.Values(1:end,index) = multiplier*obj.Values(1:end,index);
         end
-        
-        % By matching the peaks in a certain column which is shared between
-        % two data objects, shift one to match the other. Data objects have
-        % precisely the same number of frames. To keep from going in to
-        % negative time the timesteps are unchanged, so it's assumed this
-        % won't be an issue.
-        %
-        % This makes use of the xcorr function of the Matlab Signal
-        % Processing Toolbox, in order to calculate the correct time-shift
-        % using cross correlation. The longer the input data the better -
-        % unlikely to be accurate for less than a full gait cycle. Even then
-        % it's possible that depending on the lag a large amount of data will be
-        % lost. If two full gait cycles are given, should end up with a lower
-        % bound of one full gait cycle of usable data. Better for more gait 
-        % cycles. 
-        function obj = shift(obj, anotherObj, label)
-            if obj.Frames ~= anotherObj.Frames
-                error('To shift, data objects must have the same # of frames.');
-            end
-            
-            % Get the appropriate vectors. 
-            x = obj.getDataCorrespondingToLabel(label);
-            y = anotherObj.getDataCorrespondingToLabel(label);
-            
-            % Check that the label was recognised properly. 
-            if x == 0 
-                error('Label not present in data to be shifted.');
-            elseif y == 0
-                error('Label not present in comparison data.');
-            end
-            
-            % Use cross correlation to find the appropriate shift. 
-            [acor,lag] = xcorr(y,x);
-            [~,I] = max(abs(acor));
-            lagDiff = lag(I);
-            copy = obj.Values;
-            if lagDiff < 0 
-                obj.Values(1:end+lagDiff,1:end) = copy(-lagDiff+1:end,1:end);
-                obj.Values(end+lagDiff+1:end,1:end) = copy(1:-lagDiff,1:end);
-            else
-                obj.Values(1:lagDiff,1:end) = copy(end-lagDiff+1:end,1:end);
-                obj.Values(lagDiff+1:end,1:end) = copy(1:end-lagDiff,1:end);
-            end
-            % NEED TO DECIDE HOW TO HANDLE THE FACT THAT YOU LOSE SOME DATA
-            % AT AN EDGE WHEN SHIFTING! WHAT I'VE DONE ABOVE ISN'T QUITE
-            % RIGHT AS IT ASSUMES THAT YOU CAN JUST LOOP THE ENDS BUT THIS
-            % ISN'T THE CASE. LEAVING THIS FOR NOW BUT WILL COME BACK TO
-            % THIS. SEE SAVED GRAPHS TO SEE WHAT I MEAN. 
-        end
     
         % Stretch or compress a data object to lie on the given number of
         % frames.
@@ -690,63 +521,8 @@ classdef Data
             obj.Values = new_values;
             obj.Frames = frames;
             obj = obj.updateHeader();
-        end
-            
-        
-    end
-    
-    methods(Static)
-        % Given a frequency and a desired subsampling frequency which are 
-        % incompatible (i.e. mod(freq,desired) ~= 0), and are both natural 
-        % numbers, return the nearest two possible integer desired frequencies. 
-        function [upFreq, lowFreq] = ...
-                    recommendSubsamplingFrequency(currentFrequency, ...
-                                                  desiredFrequency)
-            if ~isa(currentFrequency,'double') ...
-                        || ~isa(desiredFrequency,'double') ...
-                        || rem(currentFrequency,1) ~= 0 ...
-                        || rem(desiredFrequency,1) ~= 0
-                error(['Can''t recommend subsampling frequency for '...
-                       'non-integer arguments.'])
-            elseif currentFrequency < 1 || desiredFrequency < 1
-                error(['Frequencies provided to '...
-                       'recommendSubSamplingFrequency must be strictly '...
-                       'greater than 0.'])
-            elseif desiredFrequency > currentFrequency
-                error(['Can''t recommend subsampling frequency because '...
-                       'desired frequency is higher than actual frequency.'])
-            end
-            for i=1:currentFrequency-desiredFrequency
-                if mod(currentFrequency,desiredFrequency+i) == 0
-                    upFreq = desiredFrequency + i;
-                    break
-                end
-            end
-            for i=1:desiredFrequency-1
-                if mod(currentFrequency,desiredFrequency-i) == 0
-                    lowFreq = desiredFrequency - i;
-                    break
-                end
-            end
         end 
         
-        % Given a cell containing 'time vx vy vz...' etc which is 1x1
-        % separate it in to 1 x n by detecting the spaces. 
-        function headers = detectSpaces(cell)
-            cellToString = char(cell);
-            headers = strsplit(cellToString);
-            % Occasionally headers can have its last entry as ''. This is 
-            % undesirable so it is removed if it exists. Likewise for the 
-            % first entry.
-            if strcmp(headers(end),'')
-                headers(end) = [];
-            end
-            if strcmp(headers(1),'')
-                headers(1) = [];
-            end
-        end
-            
-            
     end
     
 end

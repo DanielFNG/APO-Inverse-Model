@@ -129,22 +129,15 @@ classdef Desired
             end
         end
         
-        % Desired based on matching some input IDResult. Can also scale the
-        % desired to appropriately match the phase of the input IDResult.
-        % Only really suitable when working with data that is at least 2
-        % gait cycles long. 
+        % Desired based on matching some input IDResult.
         function obj = setupMatchID(obj, IDResult)
             % Proceed by matching a provided desired IDResult across all 
             % joints or a subset of the joints present in InputID.  
             
-            % Here it is assumed that varargin = {joints, desired, shift}. 
+            % Here it is assumed that varargin = {joints, desired}. 
             % Joints can be 'all' or a cell array giving the identifiers 
             % (names) of the joints for which we have constraints. Desired 
-            % should be an IDResult. Shift, optional, says whether the desired 
-            % should be shifted to match the phase of the input. It should
-            % be a string, describing the joint that is used for comparison
-            % to do the shifting. 
-            
+            % should be an IDResult.
             % Note that the desired ID trial is required in addition to the
             % input id trial, used as part of evaluateDesired.
             
@@ -153,12 +146,7 @@ classdef Desired
             
             % Clearly, for meaningful results the desired should ideally
             % share some parameters with the IDResult i.e. end_time - start_time
-            % should be the same. Indeed, the 'shift' optional argument is 
-            % designed to account for the IDResult beginning at different 
-            % points of the gait cycle in each case, but it requires the number
-            % of frames to be the same. To account for this, a check is
-            % performed that the end_time - start_time is pretty much the
-            % same for the desired/input IDTrial, then the desired trial is
+            % should be the same. The desired trial is
             % splined so that it's on the exact same # of frames as the
             % input trial. 
             %
@@ -166,8 +154,8 @@ classdef Desired
             % WALKING SPEEDS!
             
             % Check input arguments. 
-            if size(obj.varargin,2) < 1 || size(obj.varargin,2) > 3
-                error(['The MatchID Desired mode supports 2 or 3'...
+            if size(obj.varargin,2) ~= 2
+                error(['The MatchID Desired mode supports 2'...
                      ' input arguments, only.']);
             end
             
@@ -175,7 +163,7 @@ classdef Desired
             obj.IDResult = IDResult;
             
             % Parse input arguments. 
-            [identifiers, des, shift] = ...
+            [identifiers, des] = ...
                 parseMatchIDArguments(obj, IDResult);
             
             obj.Joints = identifiers;
@@ -196,29 +184,13 @@ classdef Desired
             % same number of frames as the input IDResult.
             des = des.stretchOrCompress(IDResult.id.Frames);
             
-            % If required shift the desired.
-            if shift ~= 0
-                des = des.shift(IDResult.id, shift);
-            end
-            
             % Now set the resulting desired.
             obj.Result = des;
         end
         
         % Parse varargin for the match_id mode. 
-        function [identifiers, des, shift] = ...
+        function [identifiers, des] = ...
                 parseMatchIDArguments(obj, IDResult)
-            % Determine whether shifting is to be used or not. 
-            if size(obj.varargin,2) == 3
-                if isa(obj.varargin{3}, 'char')
-                    shift = strcat(obj.varargin{3},'_moment'); % add on _moment
-                else
-                    error(['If used, third argument for Match ID'...
-                        ' mode should be a string.']);
-                end
-            else
-                shift = 0;
-            end
             
             % Detemine the joint identifiers. 
             if isa(obj.varargin{1}, 'char') && strcmp(obj.varargin{1}, 'all')
