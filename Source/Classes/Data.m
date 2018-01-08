@@ -471,6 +471,10 @@ classdef Data
             end
             result = result.updateHeader();
         end
+        
+        function result = isEquals(obj1,obj2)
+        end
+            
       
         % Get, as a vector, the data corresponding to a specific label.
         % Returns 0 if the label could not be matched. 
