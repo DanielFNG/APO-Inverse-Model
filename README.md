@@ -1,3 +1,6 @@
+# Branch info: MBBC
+This branch is for adding model-based Bayesian optimisation for control. Trying to replicate the results or similar results from Ding et al. 2018 but using a model-based approach. Leveraging the benefits of using a biomechanical model in combination with experimental data. 
+
 # ExOpt
 ExOpt is a framework for optimisation-based design and control of exoskeletons. It is primarily written in Matlab, on top of the OpenSim Matlab API, but contains code in C++ to use the Simbody dynamics simulator. It is written in an object oriented style.
 
