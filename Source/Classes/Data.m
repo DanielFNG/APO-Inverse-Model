@@ -610,7 +610,52 @@ classdef Data
             end
             result = result.updateHeader();
         end
-      
+        
+        function result = extend(obj1, obj2)
+            % Check that the objects have an equal number of columns. 
+            if ~(size(obj1.Values,2) == size(obj2.Values,2))
+                error('Incompatible dimensions for extending.');
+            end
+            
+            % Define some sizes - number of rows of data in each object.
+            size1 = size(obj1.Values, 1);
+            size2 = size(obj2.Values, 1);
+            
+            % Set up and re-allocate the Values.
+            new_row_size = size1 + size2;
+            result = obj1;
+            result.Values = zeros(new_row_size, size(obj1.Values,2));
+            
+            % Copy over the values from the input objects.
+            result.Values(1:size1, 1:end) = ...
+                obj1.Values(1:end, 1:end);
+            result.Values(size1 + 1:size1 + size2, 1:end) = ...
+                obj2.Values(1:end, 1:end);
+            
+            % Update header, timesteps and frames to reflect changes.
+            result = result.updateHeader();
+            result.Timesteps = result.Values(1:end, 1);
+            result.Frames = length(result.Timesteps);
+        end
+        
+        function result = slice(obj, start_frame, end_frame)
+            
+            % Set up and re-allocate values. 
+            result = Data();
+            result.Values = obj.Values(start_frame:end_frame, 1:end);
+            result.Timesteps = obj.Timesteps(start_frame:end_frame);
+            result.Frames = length(result.Timesteps);
+            result.Header = obj.Header;
+            result.hasHeader = 1;
+            result.Labels = obj.Labels;
+            result.isLabelled = 1;
+            result.Frequency = obj.Frequency;
+            result.isTimeSeries = 1;
+            result.isConsistentFrequency = 1; 
+            result = result.updateHeader();
+        end
+            
+            
         % Get, as a vector, the data corresponding to a specific label.
         % Returns 0 if the label could not be matched. 
         function vector = getDataCorrespondingToLabel(obj,label)
