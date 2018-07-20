@@ -1,5 +1,4 @@
-function RRA_adjustment = adjustmentRRA(model,ik,grf,results,load)
-
+function [RRA_adjustment, path] = adjustmentRRA(model,ik,grf,results,load)
 % Function for using RRA to adjust a model. 
 %   Uses input kinematic and GRF data to perform RRA and calculate a
 %   modified model file. 
@@ -25,12 +24,9 @@ elseif nargin == 4
     load = 'normal';
 end
 
-% If the desired results directory exists already, get its full path. If
-% not, create it and get its full path. 
-if exist([pwd '/' results], 'dir')
-    results = getFullPath(results);
-else
-    results = createUniqueDirectory(results);
+% If the desired results directory does not exist, create it.  
+if ~exist(results, 'dir')
+    mkdir(results);
 end
 
 % Construct the OST for model adjustment.
@@ -38,8 +34,7 @@ save_dir = [results '/' 'adjustment'];
 trial = OpenSimTrial(model,ik,load,grf,save_dir);
 
 % Run RRA with adjustment on this trial.
-RRA_adjustment = trial.runRRA('torso','model_adjusted');
-
+[RRA_adjustment, path] = trial.runRRA('torso','model_adjusted');
 
 end
 

@@ -29,9 +29,29 @@ if isempty(which('startup.m'))
     fprintf(fileID, '%s', ['setenv(''EXOPT_HOME'', ''' pwd ''');']);
 else
     fileID = fopen(which('startup.m'), 'a');
+    if fileID == -1
+        display(['Attempted to open existing startup.m file in ' ...
+            'matlabroot, but access was denied. Please rerun this ' ...
+            'script after running Matlab as an administrator.']);
+        cd('Setup');
+        return
+    end
     fprintf(fileID, '\n%s', ['setenv(''EXOPT_HOME'', ''' pwd ''');']);
 	flag = -1;
 end
+
+% Fix and save the location of the OpenSim err.log and out.log files. 
+fprintf(fileID, '\n%s', 'current_dir = pwd;');
+fprintf(fileID, '\n%s', 'cd(getenv(''EXOPT_HOME''));');
+fprintf(fileID, '\n%s', 'cd(''Logs'');');
+fprintf(fileID, '\n%s', 'import org.opensim.modeling.Model');
+fprintf(fileID, '\n%s', 'test = Model();');
+fprintf(...
+    fileID, '\n%s', 'setenv(''EXOPT_OUT'', [pwd filesep ''out.log'']);');
+fprintf(fileID, '\n%s', 'cd(current_dir)');
+fprintf(fileID, '\n%s', 'clear;');
+
+% Close the startup file.
 fclose(fileID);
 
 % Set the environment variable for the current session (necessary so users
@@ -44,6 +64,8 @@ addpath(genpath([getenv('EXOPT_HOME') filesep 'Source']));
 % Include any additional libraries. 
 addpath(genpath([getenv('EXOPT_HOME') filesep 'External' filesep ...
     'qpOASES-3.2.1' filesep 'interfaces' filesep 'matlab']));
+addpath(genpath([getenv('EXOPT_HOME') filesep 'External' filesep ...
+    'multiWaitbar']));
     
 % Originally setup was also added to the path, but this is a terrible idea
 % since this script uses the assumption of being in the setup folder!!

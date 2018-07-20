@@ -13,12 +13,9 @@ model = Model(model);
 model.initSystem();
 tool.setModel(model);
 
-% If the desired results directory exists already, get its full path. If
-% not, create it and get its full path. 
-if exist([pwd '/' results], 'dir')
-    results = getFullPath(results);
-else
-    results = createUniqueDirectory(results);
+% If the desired results directory does not exist, create it. 
+if ~exist(results, 'dir')
+    mkdir(results);
 end
 
 % Get the start and end time from the input data. 
@@ -34,9 +31,14 @@ tool.setResultsDir(results);
 
 tool.run();
 
-Positions = Data([results '\Analysis_BodyKinematics_pos_global.sto']);
-Velocities = Data([results '\Analysis_BodyKinematics_vel_global.sto']);
-Accelerations = Data([results '\Analysis_BodyKinematics_acc_global.sto']);
+if nargout == 3
+    Positions = ...
+        Data([results '\Analysis_BodyKinematics_pos_global.sto']);
+    Velocities = ...
+        Data([results '\Analysis_BodyKinematics_vel_global.sto']);
+    Accelerations = ...
+        Data([results '\Analysis_BodyKinematics_acc_global.sto']);
+end
 
 end
 
