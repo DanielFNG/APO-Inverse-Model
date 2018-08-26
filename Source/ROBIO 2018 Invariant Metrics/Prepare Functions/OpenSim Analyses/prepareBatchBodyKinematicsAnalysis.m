@@ -10,8 +10,8 @@ function result = prepareBatchBodyKinematicsAnalysis(...
 
 data_path = constructDataPath(...
     root, subject, foot, context, assistance);
-kinematics_folder = [data_path '\RRA_Results'];
-model_path = constructAdjustedModelPath(root, subject, assistance);
+kinematics_folder = [data_path '\IK_Results'];
+model_path = constructModelPath(root, subject, assistance);
 output_dir = [data_path '\BodyKinematics_Results'];
 
 % Run BodyKinematics analysis batch, save result if necessary.

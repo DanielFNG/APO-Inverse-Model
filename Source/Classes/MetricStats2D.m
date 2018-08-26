@@ -334,10 +334,10 @@ classdef MetricStats2D < handle
                 b(k).FaceColor = 'interp';
             end
             
-            % Add the significant difference lines. 
-            hold on;
-            obj.plotSignificantDifferences(diff);
-            hold off
+%             % Add the significant difference lines. 
+%             hold on;
+%             obj.plotSignificantDifferences(diff);
+%             hold off
             
             % Handle labels etc.
             xlabel(obj.col_descriptor, 'FontWeight', 'bold');
@@ -346,18 +346,7 @@ classdef MetricStats2D < handle
             set(ax, 'FontSize', 20, 'FontWeight', 'bold', 'XTick', ...
                 1:obj.n_cols, 'XTickLabel', obj.col_labels, 'YTick', ...
                 1:obj.n_rows, 'YTickLabel', obj.row_labels);
-            words = strsplit(obj.name(1:end-2), '_');
-            if length(words) > 1
-                for i=1:length(words)
-                    if strcmp(words{i}(end), '1')
-                        words{i} = [words{i}(1:end-1) '.'];
-                    else
-                        words{i} = [words{i} '.'];
-                    end
-                end
-            end
-            new_name = strjoin(words);
-            title([upper(new_name(1)) new_name(2:end)])
+            title(obj.name)
             
             ylim([0 5]);
                     

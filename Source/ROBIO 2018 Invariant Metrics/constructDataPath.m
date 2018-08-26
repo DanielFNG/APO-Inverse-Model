@@ -10,11 +10,11 @@ function path = constructDataPath(root, subject, foot, context, assistance)
     end
     
     if assistance == 1
-        level = 'NE';
+        level = 'PassiveA';
     elseif assistance == 2
-        level = 'ET';
+        level = 'PassiveB';
     else
-        level = 'EA';
+        level = 'ActiveA';
     end
     
     path = [root '\S' num2str(subject) '\dynamicElaborations\' side ...

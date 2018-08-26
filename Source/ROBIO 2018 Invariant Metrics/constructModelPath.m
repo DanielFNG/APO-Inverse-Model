@@ -3,9 +3,9 @@ function path = constructModelPath(root, subject, assistance)
 % the ROBIO 2017 submission. 
 
     if assistance == 1
-        model = 'no_APO';
+        model = 'francois_adjusted_session1';
     else
-        model = 'APO';
+        model = 'francois_adjusted_session2';
     end
     
     path = [root '\S' num2str(subject) '\Scaling\' model '.osim'];
